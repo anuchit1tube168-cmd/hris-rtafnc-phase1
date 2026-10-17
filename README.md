@@ -1,80 +1,77 @@
-# HRIS RTAFNC OneForAll — Phase 1
+# HRIS RTAFNC OneForAll — Personnel Service Hub
 
-Prototype หน้า Login + Admin Dashboard  
-**วิทยาลัยพยาบาลทหารอากาศ**
+ต้นแบบระบบกำลังพล **วิทยาลัยพยาบาลทหารอากาศ** สำหรับ Web / GPT Site / LINE LIFF
 
-## Tech Stack (ฟรีทั้งหมด)
+## Current staging branch
+
+`feature/service-hub-staging`
+
+แนว UI ใช้แนวคิด service-hub แบบ mosaic/tile: Hero ใหญ่ + เมนูบริการเป็นช่อง + bottom navigation บนมือถือ โดยปรับ branding เป็น RTAFNC และไม่คัดลอกทรัพย์สินของแบรนด์อื่นโดยตรง
+
+## What is installed
+
+- Mobile-first Personnel Service Hub
+- 12 service tiles
+- Search services
+- Personnel Command Center summary shell
+- 8-step end-to-end HR workflow
+- Optional Secure HRIS API adapter
+- Privacy-safe demo fallback
+- No credentials or personnel PII embedded in frontend
+
+## Main modules
+
+- Personnel Directory
+- Organization / Command Chain
+- Position & Manpower
+- Orders & Evidence
+- Leave & Rights
+- Education & Capability
+- Welfare
+- Workflow Inbox
+- Reports
+- Personnel Knowledge
+- LINE OA / LIFF
+- HR Support
+
+## Tech Stack
 
 - Vite + React 18
-- Tailwind CSS (Dark Theme)
+- Tailwind CSS + custom responsive CSS
 - React Router
-- Deploy: Vercel หรือ GitHub Pages
+- Secure API adapter via `VITE_HRIS_API_BASE`
 
-## Design System
-
-- พื้นหลัง: `#0B0F19` / `#0F172A`
-- การ์ด: `#1E293B`
-- Accent: gradient `#7C3AED` → `#3B82F6`
-- มุมโค้ง: 12px (card) / 8px (input)
-
-## เริ่มต้นใช้งาน
+## Run locally
 
 ```bash
-# ติดตั้ง
 npm install
-
-# รัน dev server
+cp .env.example .env
 npm run dev
+```
 
-# build สำหรับ production
+Open `http://localhost:5173`
+
+## Secure API
+
+Do **not** put personnel data or credentials in the repository. Configure only the secure API base URL during deployment:
+
+```env
+VITE_HRIS_API_BASE=https://your-secure-api.example
+```
+
+The frontend expects server-side identity and RBAC enforcement.
+
+## Build
+
+```bash
 npm run build
+npm run preview
 ```
 
-เปิดเบราว์เซอร์ที่ `http://localhost:5173`
+## Flow and security
 
-## Mock Login
+See [`docs/FLOW.md`](docs/FLOW.md).
 
-กรอก Username + Password อะไรก็ได้ → เข้าสู่ระบบ
+## Release rule
 
-**ทดสอบ First-login:** ใช้รหัสผ่าน `123456` หรือ `default` จะบังคับเปลี่ยนรหัสผ่านครั้งแรก  
-(ยังเป็น mock auth ใน Phase 1)
-
-## โครงสร้าง
-
-```
-src/
-├── pages/
-│   ├── Login.jsx
-│   └── Dashboard.jsx
-├── components/
-│   ├── Sidebar.jsx
-│   └── KpiCard.jsx
-├── App.jsx
-├── main.jsx
-└── index.css
-```
-
-## Deploy ฟรี
-
-### Vercel (แนะนำ)
-1. Push โค้ดขึ้น GitHub
-2. เข้า vercel.com → Import repo
-3. Deploy
-
-### GitHub Pages
-1. แก้ `vite.config.js` base เป็นชื่อ repo
-2. ใช้ action หรือ `npm run build` แล้ว push โฟลเดอร์ `dist`
-
-## เอกสารอ้างอิง
-
-ดูใน Google Drive โฟลเดอร์  
-`HRIS RTAFNC OneForAll / 06-Phase1-Core-Foundation`
-
-## Deploy ด้วย GitHub Pages (เร็วขึ้น)
-
-1. ตั้ง `base` ใน `vite.config.js` ให้ตรงชื่อ repo
-2. Push ขึ้น `main` → Actions จะ build + deploy อัตโนมัติ
-3. Settings → Pages → Source = **GitHub Actions**
-
-**เร่งความเร็ว:** รัน `npm install` บนเครื่องครั้งหนึ่ง แล้ว commit `package-lock.json`  
-รอบถัดไป Actions จะใช้ cache ติดตั้ง dependencies เร็วขึ้นมาก
+This branch is **STAGING ONLY**. Do not connect production write operations until identity, RBAC, audit logging, PII scanning, and UAT are complete and explicitly approved.
