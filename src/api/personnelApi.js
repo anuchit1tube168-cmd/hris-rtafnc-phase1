@@ -1,21 +1,29 @@
-const API_BASE = (import.meta.env.VITE_HRIS_API_BASE || '').replace(/\/$/, '')
+// Public frontend must never contain credentials, service-account material, or personnel records.
+// All protected data is requested through a same-origin Cloudflare Worker route.
+const API_BASE = '/api'
 
-export const hasSecureApi = Boolean(API_BASE)
+export const hasSecureApi = true
 
 async function request(path, options = {}) {
-  if (!API_BASE) throw new Error('SECURE_API_NOT_CONFIGURED')
-
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
+    cache: 'no-store',
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
+      'X-Requested-With': 'RTAFNC-Personnel-Portal',
       ...(options.headers || {}),
     },
     ...options,
   })
 
+  if (response.status === 401 || response.status === 403) {
+    const error = new Error('AUTH_REQUIRED')
+    error.status = response.status
+    throw error
+  }
+
   if (!response.ok) {
-    const error = new Error(`HRIS API ${response.status}`)
+    const error = new Error(`HRIS_API_${response.status}`)
     error.status = response.status
     throw error
   }
