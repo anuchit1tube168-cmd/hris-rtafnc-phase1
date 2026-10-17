@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { serviceTiles, flowSteps, demoSummary, latestItems } from './data/demoData.js'
+import { hasSecureApi, personnelApi } from './api/personnelApi.js'
 
 const Icon = ({ children }) => <span className="icon-badge" aria-hidden>{children}</span>
 
@@ -21,7 +22,7 @@ function TopBar({ onSearch }) {
   )
 }
 
-function Hero({ onStart }) {
+function Hero({ onStart, onFlow }) {
   return (
     <section className="hero-card">
       <div className="hero-copy">
@@ -30,7 +31,7 @@ function Hero({ onStart }) {
         <p>Service Hub สำหรับทำเนียบกำลังพล ตำแหน่ง คำสั่ง สิทธิ การลา การศึกษา รายงาน และงานอนุมัติ โดยคงฐานข้อมูลทางการเป็น Source of Truth</p>
         <div className="hero-actions">
           <button className="primary-button" onClick={onStart}>เริ่มใช้งาน</button>
-          <button className="ghost-button">ดู Flow ระบบ</button>
+          <button className="ghost-button" onClick={onFlow}>ดู Flow ระบบ</button>
         </div>
       </div>
       <div className="hero-art" aria-hidden>
@@ -92,18 +93,44 @@ function ServiceGrid({ search }) {
   )
 }
 
-function SummarySection() {
+function normalizeSummary(payload) {
+  if (!payload || typeof payload !== 'object') return demoSummary
+  const cards = [
+    {
+      label: 'กำลังพลปัจจุบัน',
+      value: payload.currentPersonnel ?? payload.personnelTotal ?? '—',
+      hint: 'โหลดจาก Secure Personnel Master',
+    },
+    {
+      label: 'ตำแหน่งว่าง',
+      value: payload.vacancies ?? payload.positionVacancies ?? '—',
+      hint: 'คำนวณจาก Position Slot Master',
+    },
+    {
+      label: 'งานรออนุมัติ',
+      value: payload.pendingTasks ?? payload.pendingApprovals ?? '—',
+      hint: 'Workflow ของผู้ใช้ที่เข้าสู่ระบบ',
+    },
+  ]
+  return {
+    title: payload.title || demoSummary.title,
+    asOf: payload.asOf ? `SECURE • ${payload.asOf}` : 'SECURE API CONNECTED',
+    cards,
+  }
+}
+
+function SummarySection({ summary, loading, connected }) {
   return (
     <section className="command-card">
       <div className="command-heading">
         <div>
           <div className="section-kicker light">OVERVIEW</div>
-          <h2>{demoSummary.title}</h2>
+          <h2>{summary.title}</h2>
         </div>
-        <span className="status-pill">{demoSummary.asOf}</span>
+        <span className="status-pill">{loading ? 'LOADING…' : summary.asOf}</span>
       </div>
       <div className="summary-grid">
-        {demoSummary.cards.map((card) => (
+        {summary.cards.map((card) => (
           <div className="summary-card" key={card.label}>
             <div className="summary-label">{card.label}</div>
             <div className="summary-value">{card.value}</div>
@@ -111,7 +138,11 @@ function SummarySection() {
           </div>
         ))}
       </div>
-      <div className="privacy-note">ข้อมูลจริงจะไม่ถูกฝังในหน้าเว็บสาธารณะ ระบบต้องดึงผ่าน Secure API หลังการยืนยันตัวตนและตรวจ RBAC เท่านั้น</div>
+      <div className="privacy-note">
+        {connected
+          ? 'เชื่อม Secure API แล้ว: หน้าเว็บอ่านเฉพาะข้อมูลตามสิทธิ์ของผู้ใช้ และไม่ฝังข้อมูลจริงไว้ใน public bundle'
+          : 'Staging ยังไม่ตั้ง VITE_HRIS_API_BASE จึงแสดงข้อมูลสาธิตเท่านั้น ข้อมูลจริงต้องดึงผ่าน Secure API หลังยืนยันตัวตนและ RBAC'}
+      </div>
     </section>
   )
 }
@@ -180,6 +211,27 @@ function BottomNav() {
 
 export default function App() {
   const [search, setSearch] = useState('')
+  const [summary, setSummary] = useState(demoSummary)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    if (!hasSecureApi) return () => { active = false }
+
+    setSummaryLoading(true)
+    personnelApi.summary()
+      .then((payload) => {
+        if (active) setSummary(normalizeSummary(payload))
+      })
+      .catch(() => {
+        if (active) setSummary(demoSummary)
+      })
+      .finally(() => {
+        if (active) setSummaryLoading(false)
+      })
+
+    return () => { active = false }
+  }, [])
 
   const scrollToSearch = () => {
     document.getElementById('search-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -192,10 +244,10 @@ export default function App() {
     <div className="app-shell">
       <TopBar onSearch={scrollToSearch} />
       <main>
-        <Hero onStart={scrollToSearch} />
+        <Hero onStart={scrollToSearch} onFlow={scrollToFlow} />
         <SearchPanel search={search} setSearch={setSearch} />
         <ServiceGrid search={search} />
-        <SummarySection />
+        <SummarySection summary={summary} loading={summaryLoading} connected={hasSecureApi} />
         <div onClick={scrollToFlow} role="button" tabIndex={0} className="flow-jump">ดู Workflow ทั้งระบบ <span>↓</span></div>
         <FlowSection />
         <LatestSection />
