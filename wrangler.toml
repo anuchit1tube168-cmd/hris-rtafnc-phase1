@@ -1,0 +1,7 @@
+name = "rtafnc-personnel-portal"
+compatibility_date = "2026-10-17"
+pages_build_output_dir = "./dist"
+
+# Public repository contains UI shell only.
+# Do not place personnel data, credentials, tokens, IDs, or source documents here.
+# Protected HRIS data must be served from a private Cloudflare Worker/API after auth + RBAC.
